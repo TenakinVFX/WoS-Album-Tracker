@@ -6,6 +6,7 @@
 <title>WS Album Tracker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -21,17 +22,42 @@
   #snow-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.35; }
   .crystal-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
   .crystal-bg svg { position: absolute; opacity: 0.03; }
+
+  /* ── Header ── */
   .site-header { position: sticky; top: 0; z-index: 100; background: rgba(6,14,28,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 0 20px; }
   .header-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; gap: 16px; height: 56px; flex-wrap: wrap; }
   .site-logo { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
   .logo-icon { width: 32px; height: 32px; background: var(--accent-dim); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
   .logo-text { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; color: var(--text-primary); letter-spacing: 0.03em; line-height: 1; }
   .logo-sub { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 1px; }
-  .header-stats { display: flex; align-items: center; gap: 20px; margin-left: auto; flex-shrink: 0; }
+  .header-stats { display: flex; align-items: center; gap: 20px; }
   .hstat { display: flex; flex-direction: column; align-items: flex-end; }
   .hstat-val { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 600; color: var(--text-num); line-height: 1; }
   .hstat-lbl { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; }
   .hstat-sep { width: 1px; height: 28px; background: var(--border); }
+
+  /* ── Account button ── */
+  .header-right { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; }
+  .account-btn {
+    display: flex; align-items: center; gap: 7px;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text-secondary);
+    cursor: pointer; padding: 6px 11px;
+    font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 500; letter-spacing: 0.04em;
+    transition: background 0.15s, color 0.15s;
+  }
+  .account-btn:hover { background: var(--bg3); color: var(--text-primary); }
+  .account-btn .dot { width: 7px; height: 7px; border-radius: 50%; background: #3aaa5c; flex-shrink: 0; transition: background 0.3s; }
+  .account-btn .dot.offline { background: var(--text-muted); }
+  .sync-indicator {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 11px; letter-spacing: 0.05em;
+    color: var(--text-muted); white-space: nowrap; transition: color 0.3s;
+  }
+  .sync-indicator.syncing { color: var(--accent-bright); animation: pulse-text 1.2s ease-in-out infinite; }
+  .sync-indicator.saved { color: #3aaa5c; }
+  @keyframes pulse-text { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* ── Progress strip ── */
   .progress-strip { background: var(--bg1); border-bottom: 1px solid var(--border2); padding: 10px 20px; position: relative; z-index: 1; }
   .progress-strip-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; gap: 14px; }
   .progress-label { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 500; color: var(--text-muted); white-space: nowrap; letter-spacing: 0.05em; text-transform: uppercase; }
@@ -39,6 +65,8 @@
   .progress-fill { height: 100%; border-radius: 99px; background: var(--accent); transition: width 0.4s ease; position: relative; }
   .progress-fill::after { content: ''; position: absolute; right: 0; top: 0; width: 6px; height: 100%; background: var(--accent-bright); border-radius: 99px; }
   .progress-pct { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 600; color: var(--accent-bright); min-width: 38px; text-align: right; white-space: nowrap; }
+
+  /* ── Toolbar ── */
   .toolbar { max-width: 1200px; margin: 0 auto; padding: 14px 20px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; position: relative; z-index: 1; }
   .filter-group { display: flex; align-items: center; gap: 6px; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 3px; }
   .fbtn { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 500; letter-spacing: 0.04em; padding: 5px 12px; border-radius: 6px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; transition: all 0.15s; }
@@ -55,6 +83,8 @@
   #search-input { width: 100%; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-family: 'Barlow', sans-serif; font-size: 13px; padding: 7px 10px 7px 30px; outline: none; transition: border-color 0.15s; }
   #search-input::placeholder { color: var(--text-muted); }
   #search-input:focus { border-color: var(--accent-dim); }
+
+  /* ── Album grid ── */
   .album-grid { max-width: 1200px; margin: 0 auto; padding: 0 20px 80px; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; position: relative; z-index: 1; }
   .album-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; transition: border-color 0.25s; }
   .album-card.complete { border-color: var(--complete-border); }
@@ -85,36 +115,14 @@
   .max-btn { height: 20px; padding: 0 7px; border-radius: 5px; border: 1px solid var(--border); background: var(--bg2); color: var(--text-muted); font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.05em; cursor: pointer; display: flex; align-items: center; transition: all 0.1s; white-space: nowrap; -webkit-tap-highlight-color: transparent; touch-action: manipulation; flex-shrink: 0; }
   .max-btn:hover { background: var(--accent-dim); color: var(--ice1); border-color: var(--accent); }
   .puzzle-row.done .max-btn { opacity: 0.35; pointer-events: none; }
-
-  /* Shard pip with number label */
   .shard-grid { display: flex; flex-wrap: wrap; gap: 4px; }
-  .shard-pip {
-    width: 26px; height: 26px; border-radius: 5px;
-    border: 1.5px solid var(--border);
-    background: var(--bg3);
-    cursor: pointer;
-    transition: background 0.1s, border-color 0.1s, transform 0.08s;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-    flex-shrink: 0;
-    position: relative;
-    display: flex; align-items: center; justify-content: center;
-  }
+  .shard-pip { width: 26px; height: 26px; border-radius: 5px; border: 1.5px solid var(--border); background: var(--bg3); cursor: pointer; transition: background 0.1s, border-color 0.1s, transform 0.08s; -webkit-tap-highlight-color: transparent; touch-action: manipulation; flex-shrink: 0; position: relative; display: flex; align-items: center; justify-content: center; }
   .shard-pip:hover { border-color: var(--accent-dim); }
   .shard-pip:active { transform: scale(0.88); }
-  .shard-num {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 10px; font-weight: 600;
-    color: var(--text-muted);
-    line-height: 1;
-    pointer-events: none;
-    user-select: none;
-    transition: color 0.1s, opacity 0.1s;
-  }
+  .shard-num { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 600; color: var(--text-muted); line-height: 1; pointer-events: none; user-select: none; transition: color 0.1s, opacity 0.1s; }
   .shard-pip.filled { background: var(--accent); border-color: var(--accent-bright); }
   .shard-pip.filled .shard-num { color: rgba(255,255,255,0.5); }
   .shard-pip.filled::after { content: '✓'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.9); }
-
   .album-actions { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
   .album-act-btn { display: inline-flex; align-items: center; gap: 5px; font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 500; letter-spacing: 0.04em; padding: 5px 11px; border-radius: 7px; border: 1px solid var(--border); background: var(--bg3); color: var(--text-secondary); cursor: pointer; transition: all 0.15s; -webkit-tap-highlight-color: transparent; }
   .album-act-btn:hover { background: var(--bg2); color: var(--text-primary); }
@@ -122,12 +130,47 @@
   .album-act-btn.maxall { border-color: var(--accent-dim); color: var(--accent-bright); }
   .album-act-btn.maxall:hover { background: rgba(46,137,200,0.12); }
 
-  /* Hidden file input for import */
+  /* ── Auth modal ── */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: flex; align-items: center; justify-content: center; z-index: 10000; }
+  .modal { background: var(--bg1); border: 1px solid var(--border); border-radius: 12px; width: 400px; max-width: 95vw; overflow: hidden; }
+  .modal-header { background: var(--bg0); padding: 16px 20px; border-bottom: 1px solid var(--border2); display: flex; align-items: center; justify-content: space-between; }
+  .modal-header h3 { font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 600; color: var(--text-primary); letter-spacing: 0.04em; }
+  .modal-close { background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 16px; padding: 4px 7px; border-radius: 4px; line-height: 1; transition: background 0.15s, color 0.15s; }
+  .modal-close:hover { background: rgba(232,17,35,0.3); color: var(--text-primary); }
+  .modal-body { padding: 22px 24px; }
+  .auth-tabs { display: grid; grid-template-columns: 1fr 1fr; background: var(--bg3); border-radius: 8px; padding: 3px; margin-bottom: 20px; }
+  .auth-tab { padding: 8px; border: none; border-radius: 6px; background: transparent; color: var(--text-muted); cursor: pointer; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 500; letter-spacing: 0.04em; transition: all 0.15s; }
+  .auth-tab.active { background: var(--accent-dim); color: var(--ice1); }
+  .field-label { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; display: block; letter-spacing: 0.06em; text-transform: uppercase; }
+  .field-input { width: 100%; padding: 10px 12px; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-family: 'Barlow', sans-serif; font-size: 13px; margin-bottom: 14px; caret-color: var(--accent-bright); outline: none; transition: border-color 0.15s; }
+  .field-input:focus { border-color: var(--accent-dim); }
+  .auth-action-btn { width: 100%; padding: 11px; background: var(--accent-dim); border: none; border-radius: 8px; color: var(--ice1); font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 600; letter-spacing: 0.05em; cursor: pointer; margin-top: 4px; transition: background 0.15s; }
+  .auth-action-btn:hover { background: var(--accent); }
+  .auth-action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .forgot-link { display: block; text-align: right; font-size: 11px; color: var(--accent-dim); cursor: pointer; margin-top: -8px; margin-bottom: 16px; }
+  .forgot-link:hover { color: var(--accent-bright); }
+  .alert-banner { padding: 10px 12px; border-radius: 6px; font-size: 12px; margin-bottom: 14px; display: none; font-family: 'Barlow', sans-serif; }
+  .alert-error { background: rgba(180,40,40,0.15); border: 1px solid rgba(180,40,40,0.4); color: #ff8080; display: block; }
+  .alert-success { background: rgba(40,140,80,0.15); border: 1px solid rgba(40,140,80,0.4); color: #80e0a0; display: block; }
+  .auth-subtitle { font-size: 12px; color: var(--text-muted); text-align: center; margin-bottom: 20px; line-height: 1.5; }
+
+  /* ── Dropdown ── */
+  .dropdown-menu { position: fixed; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.6); z-index: 9000; min-width: 210px; padding: 4px 0; }
+  .dropdown-email { padding: 10px 14px; font-size: 11px; color: var(--text-muted); border-bottom: 1px solid var(--border2); margin-bottom: 4px; font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0.04em; }
+  .ctx-item { width: 100%; padding: 9px 14px; background: transparent; border: none; color: var(--text-secondary); text-align: left; cursor: pointer; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 500; letter-spacing: 0.04em; display: flex; align-items: center; gap: 8px; transition: background 0.12s, color 0.12s; }
+  .ctx-item:hover { background: var(--bg3); color: var(--text-primary); }
+  .ctx-item.danger { color: #e05555; }
+  .ctx-item.danger:hover { background: rgba(200,40,40,0.15); }
+  .ctx-sep { border: none; border-top: 1px solid var(--border2); margin: 3px 0; }
+
+  /* ── Import file input ── */
   #import-file { display: none; }
 
+  /* ── Toast ── */
   #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(70px); background: var(--bg2); color: var(--accent-bright); border: 1px solid var(--accent-dim); padding: 9px 20px; border-radius: 10px; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 500; letter-spacing: 0.04em; z-index: 9999; transition: transform 0.3s ease; pointer-events: none; white-space: nowrap; box-shadow: 0 4px 24px rgba(0,0,0,0.5); }
   #toast.show { transform: translateX(-50%) translateY(0); }
   .empty-state { grid-column: 1/-1; text-align: center; padding: 48px 20px; color: var(--text-muted); font-family: 'Barlow Condensed', sans-serif; font-size: 16px; letter-spacing: 0.05em; }
+
   @media (max-width: 600px) {
     .header-inner { height: auto; padding: 10px 0; gap: 10px; }
     .header-stats { gap: 12px; }
@@ -139,6 +182,7 @@
     .progress-strip { padding: 8px 12px; }
     .site-header { padding: 0 12px; }
     .logo-sub { display: none; }
+    .sync-indicator { display: none; }
   }
   @media (max-width: 400px) { .header-stats { display: none; } }
 </style>
@@ -165,6 +209,13 @@
       <div class="hstat"><span class="hstat-val" id="h-puzzles">0/144</span><span class="hstat-lbl">Puzzles</span></div>
       <div class="hstat-sep"></div>
       <div class="hstat"><span class="hstat-val" id="h-shards">0/0</span><span class="hstat-lbl">Shards</span></div>
+    </div>
+    <div class="header-right">
+      <span class="sync-indicator" id="sync-indicator"></span>
+      <button class="account-btn" id="account-btn" onclick="handleAccountClick()">
+        <span class="dot offline" id="account-dot"></span>
+        <span id="account-label">Sign In</span>
+      </button>
     </div>
   </div>
 </header>
@@ -195,7 +246,6 @@
     <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
     Copy progress
   </button>
-  <!-- Export / Import -->
   <button class="tbtn" id="btn-export">
     <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
     Export
@@ -215,6 +265,16 @@
 <div id="toast"></div>
 
 <script>
+// ═══════════════════════════════════════════════════════
+// SUPABASE CONFIG — swap these for your project
+// ═══════════════════════════════════════════════════════
+const SUPABASE_URL  = 'https://ylczbroxxafbcrubhhwq.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlsY3picm94eGFmYmNydWJoaHdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTU5NDAsImV4cCI6MjA5NTM5MTk0MH0.Hu7ziiSg6i_AbCYlGHZ9L3t03oP8Op_BIupw1ShIkuU';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ═══════════════════════════════════════════════════════
+// ALBUM DATA
+// ═══════════════════════════════════════════════════════
 const IMG_BASE = 'https://raw.githubusercontent.com/TenakinVFX/Whiteout-Survival/main/';
 
 const ALBUMS=[
@@ -236,96 +296,368 @@ const ALBUMS=[
   {name:"Explore the World",p:[["War on Winter",9],["Exploration Journal",12],["Hunting Guild",12],["The Raging Bear",12],["Treasure Kingdom",15],["Wealth Is Knowledge",15],["Ruins of Old",15],["Cryptid Days",18],["Call of the Stars",18]]}
 ];
 
-const SK='ws_tracker_v4';
-let state={},expanded=false,filter='all',searchQ='';
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+const SK = 'ws_tracker_v4';
+const SK_TIME = 'ws_tracker_saved_at';
+let state = {}, expanded = false, filter = 'all', searchQ = '';
+let currentUser = null;
+let syncTimer = null;
 
-function load(){
-  try{const s=localStorage.getItem(SK);if(s)state=JSON.parse(s);}catch(e){}
-  ALBUMS.forEach((_,ai)=>{
-    if(!state[ai])state[ai]={};
-    ALBUMS[ai].p.forEach((p,pi)=>{
-      if(!Array.isArray(state[ai][pi])){
-        const old=state[ai][pi]||0;
-        state[ai][pi]=Array(p[1]).fill(false).map((_,i)=>i<old);
+// ═══════════════════════════════════════════════════════
+// LOCAL STORAGE
+// ═══════════════════════════════════════════════════════
+function load() {
+  try { const s = localStorage.getItem(SK); if (s) state = JSON.parse(s); } catch(e) {}
+  ALBUMS.forEach((_, ai) => {
+    if (!state[ai]) state[ai] = {};
+    ALBUMS[ai].p.forEach((p, pi) => {
+      if (!Array.isArray(state[ai][pi])) {
+        const old = state[ai][pi] || 0;
+        state[ai][pi] = Array(p[1]).fill(false).map((_, i) => i < old);
       }
-      if(state[ai][pi].length!==p[1]){
-        const arr=Array(p[1]).fill(false);
-        state[ai][pi].forEach((v,i)=>{if(i<p[1])arr[i]=v;});
-        state[ai][pi]=arr;
+      if (state[ai][pi].length !== p[1]) {
+        const arr = Array(p[1]).fill(false);
+        state[ai][pi].forEach((v, i) => { if (i < p[1]) arr[i] = v; });
+        state[ai][pi] = arr;
       }
     });
   });
 }
 
-function save(){try{localStorage.setItem(SK,JSON.stringify(state));}catch(e){}}
-
-function puzzleCount(ai,pi){return(state[ai][pi]||[]).filter(Boolean).length;}
-function albumStats(ai){
-  let got=0,tot=0,done=0;
-  ALBUMS[ai].p.forEach((p,pi)=>{const c=puzzleCount(ai,pi);got+=c;tot+=p[1];if(c>=p[1])done++;});
-  return{got,tot,done,count:ALBUMS[ai].p.length};
-}
-function globalStats(){
-  let gs=0,ts=0,gp=0,tp=0,ga=0;
-  ALBUMS.forEach((_,ai)=>{const s=albumStats(ai);gs+=s.got;ts+=s.tot;gp+=s.done;tp+=s.count;if(s.done===s.count)ga++;});
-  return{gs,ts,gp,tp,ga};
+function saveLocal() {
+  try {
+    localStorage.setItem(SK, JSON.stringify(state));
+    localStorage.setItem(SK_TIME, new Date().toISOString());
+  } catch(e) {}
 }
 
-function updateGlobal(){
-  const g=globalStats();
-  document.getElementById('h-albums').textContent=g.ga+'/16';
-  document.getElementById('h-puzzles').textContent=g.gp+'/'+g.tp;
-  document.getElementById('h-shards').textContent=g.gs+'/'+g.ts;
-  const pct=g.ts>0?Math.round(g.gs/g.ts*100):0;
-  document.getElementById('g-pct').textContent=pct+'%';
-  document.getElementById('g-bar').style.width=pct+'%';
+// ═══════════════════════════════════════════════════════
+// CLOUD SYNC
+// ═══════════════════════════════════════════════════════
+function setSyncStatus(msg, cls) {
+  const el = document.getElementById('sync-indicator');
+  el.textContent = msg;
+  el.className = 'sync-indicator' + (cls ? ' ' + cls : '');
 }
 
-function updateCard(ai){
-  const s=albumStats(ai);
-  const pct=s.tot>0?Math.round(s.got/s.tot*100):0;
-  const card=document.querySelector('[data-ai="'+ai+'"]');
-  if(!card)return;
-  const fill=card.querySelector('.album-progress-fill');
-  if(fill)fill.style.width=pct+'%';
-  const pctEl=card.querySelector('.album-pct');
-  if(pctEl){
-    if(s.done===s.count){pctEl.textContent='✓ Complete';pctEl.className='album-pct done';}
-    else{pctEl.textContent=s.got+' / '+s.tot;pctEl.className='album-pct';}
+// Debounced — called after every state change when signed in
+function schedulePush() {
+  if (!currentUser) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(pushToCloud, 1500);
+}
+
+async function pushToCloud() {
+  if (!currentUser) return;
+  setSyncStatus('Saving…', 'syncing');
+  try {
+    const { error } = await sb
+      .from('ws_tracker_progress')
+      .upsert({ user_id: currentUser.id, data: state });
+    if (error) throw error;
+    setSyncStatus('Saved ✓', 'saved');
+    setTimeout(() => setSyncStatus(''), 3000);
+  } catch(e) {
+    setSyncStatus('Sync failed', '');
+    console.error('[WS Tracker] push failed:', e.message);
   }
-  if(s.done===s.count)card.classList.add('complete');else card.classList.remove('complete');
-  ALBUMS[ai].p.forEach((p,pi)=>{
-    const row=card.querySelector('.puzzle-row[data-ai="'+ai+'"][data-pi="'+pi+'"]');
-    if(!row)return;
-    const shards=state[ai][pi]||[];
-    const c=shards.filter(Boolean).length;
-    const max=p[1];
-    const done=c>=max;
-    const cnt=row.querySelector('.puzzle-count');
-    if(cnt)cnt.textContent=c+' / '+max;
-    if(done)row.classList.add('done');else row.classList.remove('done');
-    shards.forEach((v,si)=>{
-      const pip=row.querySelector('.shard-pip[data-si="'+si+'"]');
-      if(pip){if(v)pip.classList.add('filled');else pip.classList.remove('filled');}
+}
+
+async function pullFromCloud() {
+  if (!currentUser) return;
+  setSyncStatus('Loading…', 'syncing');
+  try {
+    const { data, error } = await sb
+      .from('ws_tracker_progress')
+      .select('data, updated_at')
+      .eq('user_id', currentUser.id)
+      .maybeSingle();
+    if (error) throw error;
+
+    if (data?.data) {
+      const cloudTime = new Date(data.updated_at);
+      const localTimeStr = localStorage.getItem(SK_TIME);
+      const localTime = localTimeStr ? new Date(localTimeStr) : new Date(0);
+
+      if (!localTimeStr || cloudTime > localTime) {
+        // Cloud is newer — use it
+        state = data.data;
+        normaliseState();
+        saveLocal();
+        buildGrid();
+        updateGlobal();
+        setSyncStatus('Loaded from cloud ✓', 'saved');
+        setTimeout(() => setSyncStatus(''), 3000);
+      } else if (localTime > cloudTime) {
+        // Local is newer — push up
+        await pushToCloud();
+      } else {
+        setSyncStatus('Up to date ✓', 'saved');
+        setTimeout(() => setSyncStatus(''), 3000);
+      }
+    } else {
+      // No cloud save yet — push local up
+      await pushToCloud();
+    }
+  } catch(e) {
+    setSyncStatus('Sync error', '');
+    console.error('[WS Tracker] pull failed:', e.message);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// AUTH UI
+// ═══════════════════════════════════════════════════════
+function updateAccountUI() {
+  const dot = document.getElementById('account-dot');
+  const label = document.getElementById('account-label');
+  if (currentUser) {
+    dot.classList.remove('offline');
+    label.textContent = currentUser.email?.split('@')[0] || 'Account';
+  } else {
+    dot.classList.add('offline');
+    label.textContent = 'Sign In';
+  }
+}
+
+function handleAccountClick() {
+  if (currentUser) showAccountDropdown();
+  else showAuthModal();
+}
+
+function showAccountDropdown() {
+  closeAllOverlays();
+  const btn = document.getElementById('account-btn');
+  const rect = btn.getBoundingClientRect();
+  const menu = document.createElement('div');
+  menu.className = 'dropdown-menu';
+  menu.id = '_acctDrop';
+  menu.style.top = (rect.bottom + 6) + 'px';
+  menu.style.right = (window.innerWidth - rect.right) + 'px';
+  menu.innerHTML = `
+    <div class="dropdown-email">☁ ${currentUser.email}</div>
+    <button class="ctx-item" onclick="pullFromCloud(); closeAllOverlays()">⟳ &nbsp;Force sync from cloud</button>
+    <hr class="ctx-sep">
+    <button class="ctx-item danger" onclick="signOut()">⬡ &nbsp;Sign out</button>`;
+  document.body.appendChild(menu);
+  setTimeout(() => document.addEventListener('click', closeAllOverlays, { once: true }), 0);
+}
+
+function showAuthModal() {
+  closeAllOverlays();
+  let mode = 'signin';
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = '_authModal';
+
+  function render() {
+    const isIn = mode === 'signin', isUp = mode === 'signup';
+    overlay.innerHTML = `
+    <div class="modal">
+      <div class="modal-header">
+        <h3>❄ WS TRACKER ACCOUNT</h3>
+        <button class="modal-close" onclick="closeAllOverlays()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="auth-tabs">
+          <button class="auth-tab ${isIn ? 'active' : ''}" onclick="_authMode('signin')">Sign In</button>
+          <button class="auth-tab ${isUp ? 'active' : ''}" onclick="_authMode('signup')">Create Account</button>
+        </div>
+        <p class="auth-subtitle">${isIn ? 'Sign in to sync your progress across devices.' : 'Free account — your progress syncs automatically.'}</p>
+        <div id="_authAlert" class="alert-banner"></div>
+        <label class="field-label">Email</label>
+        <input class="field-input" type="email" id="_authEmail" placeholder="you@example.com" onkeydown="if(event.key==='Enter')_authSubmit()">
+        ${mode !== 'reset' ? `
+        <label class="field-label">Password</label>
+        <input class="field-input" type="password" id="_authPw" placeholder="••••••••" onkeydown="if(event.key==='Enter')_authSubmit()">
+        ${isIn ? `<span class="forgot-link" onclick="_authMode('reset')">Forgot password?</span>` : ''}
+        ` : `<p style="font-size:12px;color:var(--text-muted);margin-bottom:16px">Enter your email and we'll send a reset link.</p>`}
+        <button class="auth-action-btn" id="_authBtn" onclick="_authSubmit()">
+          ${isIn ? 'Sign In' : isUp ? 'Create Account' : 'Send Reset Email'}
+        </button>
+      </div>
+    </div>`;
+    setTimeout(() => document.getElementById('_authEmail')?.focus(), 50);
+  }
+
+  window._authMode = (m) => { mode = m; render(); };
+  window._authSubmit = async () => {
+    const email = document.getElementById('_authEmail')?.value.trim();
+    const pw = document.getElementById('_authPw')?.value;
+    const btn = document.getElementById('_authBtn');
+    const alertEl = document.getElementById('_authAlert');
+    if (!email) return showAuthAlert('Please enter your email.', 'error');
+    btn.disabled = true; btn.textContent = 'Please wait…';
+    alertEl.className = 'alert-banner';
+    try {
+      if (mode === 'signin') {
+        if (!pw) { showAuthAlert('Please enter your password.', 'error'); btn.disabled = false; btn.textContent = 'Sign In'; return; }
+        const { error } = await sb.auth.signInWithPassword({ email, password: pw });
+        if (error) throw error;
+        const { data: { session } } = await sb.auth.getSession();
+        currentUser = session?.user ?? null;
+        updateAccountUI();
+        closeAllOverlays();
+        await pullFromCloud();
+      } else if (mode === 'signup') {
+        if (!pw || pw.length < 6) { showAuthAlert('Password must be at least 6 characters.', 'error'); btn.disabled = false; btn.textContent = 'Create Account'; return; }
+        const { data, error } = await sb.auth.signUp({ email, password: pw });
+        if (error) throw error;
+        if (data?.session) {
+          currentUser = data.session.user;
+          updateAccountUI();
+          closeAllOverlays();
+          await pushToCloud();
+        } else {
+          showAuthAlert('Account created! Check your email to confirm, then sign in.', 'success');
+          window._authMode('signin');
+        }
+      } else if (mode === 'reset') {
+        const { error } = await sb.auth.resetPasswordForEmail(email);
+        if (error) throw error;
+        showAuthAlert('Reset email sent! Check your inbox.', 'success');
+      }
+    } catch(err) {
+      showAuthAlert(cleanAuthError(err.message), 'error');
+    }
+    btn.disabled = false;
+    btn.textContent = mode === 'signin' ? 'Sign In' : mode === 'signup' ? 'Create Account' : 'Send Reset Email';
+  };
+
+  function showAuthAlert(msg, type) {
+    const el = document.getElementById('_authAlert');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'alert-banner alert-' + type;
+  }
+
+  render();
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeAllOverlays(); });
+}
+
+function cleanAuthError(msg) {
+  if (msg.includes('Invalid login credentials')) return 'Invalid email or password.';
+  if (msg.includes('User already registered')) return 'An account with this email already exists.';
+  if (msg.includes('Password should be at least')) return 'Password must be at least 6 characters.';
+  return msg;
+}
+
+async function signOut() {
+  closeAllOverlays();
+  await sb.auth.signOut();
+  currentUser = null;
+  updateAccountUI();
+  setSyncStatus('');
+  toast('Signed out.');
+}
+
+function closeAllOverlays() {
+  ['_authModal', '_acctDrop'].forEach(id => document.getElementById(id)?.remove());
+  document.removeEventListener('click', closeAllOverlays);
+}
+
+// ═══════════════════════════════════════════════════════
+// SAVE — called after every state change
+// ═══════════════════════════════════════════════════════
+function save() {
+  saveLocal();
+  schedulePush();
+}
+
+// ═══════════════════════════════════════════════════════
+// STATE HELPERS
+// ═══════════════════════════════════════════════════════
+function normaliseState() {
+  ALBUMS.forEach((_, ai) => {
+    if (!state[ai]) state[ai] = {};
+    ALBUMS[ai].p.forEach((p, pi) => {
+      if (!Array.isArray(state[ai][pi])) {
+        const old = state[ai][pi] || 0;
+        state[ai][pi] = Array(p[1]).fill(false).map((_, i) => i < old);
+      }
+      if (state[ai][pi].length !== p[1]) {
+        const arr = Array(p[1]).fill(false);
+        state[ai][pi].forEach((v, i) => { if (i < p[1]) arr[i] = v; });
+        state[ai][pi] = arr;
+      }
     });
   });
 }
 
-function makeThumb(albumName){
-  const src=IMG_BASE+encodeURIComponent(albumName)+'.png';
+function puzzleCount(ai, pi) { return (state[ai][pi] || []).filter(Boolean).length; }
+function albumStats(ai) {
+  let got = 0, tot = 0, done = 0;
+  ALBUMS[ai].p.forEach((p, pi) => { const c = puzzleCount(ai, pi); got += c; tot += p[1]; if (c >= p[1]) done++; });
+  return { got, tot, done, count: ALBUMS[ai].p.length };
+}
+function globalStats() {
+  let gs = 0, ts = 0, gp = 0, tp = 0, ga = 0;
+  ALBUMS.forEach((_, ai) => { const s = albumStats(ai); gs += s.got; ts += s.tot; gp += s.done; tp += s.count; if (s.done === s.count) ga++; });
+  return { gs, ts, gp, tp, ga };
+}
+
+function updateGlobal() {
+  const g = globalStats();
+  document.getElementById('h-albums').textContent = g.ga + '/16';
+  document.getElementById('h-puzzles').textContent = g.gp + '/' + g.tp;
+  document.getElementById('h-shards').textContent = g.gs + '/' + g.ts;
+  const pct = g.ts > 0 ? Math.round(g.gs / g.ts * 100) : 0;
+  document.getElementById('g-pct').textContent = pct + '%';
+  document.getElementById('g-bar').style.width = pct + '%';
+}
+
+function updateCard(ai) {
+  const s = albumStats(ai);
+  const pct = s.tot > 0 ? Math.round(s.got / s.tot * 100) : 0;
+  const card = document.querySelector('[data-ai="' + ai + '"]');
+  if (!card) return;
+  const fill = card.querySelector('.album-progress-fill');
+  if (fill) fill.style.width = pct + '%';
+  const pctEl = card.querySelector('.album-pct');
+  if (pctEl) {
+    if (s.done === s.count) { pctEl.textContent = '✓ Complete'; pctEl.className = 'album-pct done'; }
+    else { pctEl.textContent = s.got + ' / ' + s.tot; pctEl.className = 'album-pct'; }
+  }
+  if (s.done === s.count) card.classList.add('complete'); else card.classList.remove('complete');
+  ALBUMS[ai].p.forEach((p, pi) => {
+    const row = card.querySelector('.puzzle-row[data-ai="' + ai + '"][data-pi="' + pi + '"]');
+    if (!row) return;
+    const shards = state[ai][pi] || [];
+    const c = shards.filter(Boolean).length;
+    const max = p[1];
+    const done = c >= max;
+    const cnt = row.querySelector('.puzzle-count');
+    if (cnt) cnt.textContent = c + ' / ' + max;
+    if (done) row.classList.add('done'); else row.classList.remove('done');
+    shards.forEach((v, si) => {
+      const pip = row.querySelector('.shard-pip[data-si="' + si + '"]');
+      if (pip) { if (v) pip.classList.add('filled'); else pip.classList.remove('filled'); }
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════
+function makeThumb(albumName) {
+  const src = IMG_BASE + encodeURIComponent(albumName) + '.png';
   return `<div class="album-thumb"><img src="${src}" alt="${albumName}" onerror="this.classList.add('errored');this.parentElement.innerHTML='❄';"></div>`;
 }
 
-function buildPuzzleRow(ai,pi,q){
-  const p=ALBUMS[ai].p[pi];
-  const shards=state[ai][pi]||[];
-  const c=shards.filter(Boolean).length;
-  const max=p[1];
-  const done=c>=max;
-  const highlight=q&&p[0].toLowerCase().includes(q.toLowerCase())?' style="background:rgba(46,137,200,0.08)"':'';
-  // Numbered pips — show number when unchecked, checkmark when filled
-  const pips=shards.map((v,si)=>`<div class="shard-pip${v?' filled':''}" data-ai="${ai}" data-pi="${pi}" data-si="${si}" title="Shard ${si+1}"><span class="shard-num">${si+1}</span></div>`).join('');
-  return `<div class="puzzle-row${done?' done':''}" data-ai="${ai}" data-pi="${pi}"${highlight}>
+function buildPuzzleRow(ai, pi, q) {
+  const p = ALBUMS[ai].p[pi];
+  const shards = state[ai][pi] || [];
+  const c = shards.filter(Boolean).length;
+  const max = p[1];
+  const done = c >= max;
+  const highlight = q && p[0].toLowerCase().includes(q.toLowerCase()) ? ' style="background:rgba(46,137,200,0.08)"' : '';
+  const pips = shards.map((v, si) =>
+    `<div class="shard-pip${v ? ' filled' : ''}" data-ai="${ai}" data-pi="${pi}" data-si="${si}" title="Shard ${si + 1}"><span class="shard-num">${si + 1}</span></div>`
+  ).join('');
+  return `<div class="puzzle-row${done ? ' done' : ''}" data-ai="${ai}" data-pi="${pi}"${highlight}>
     <div class="puzzle-row-top">
       <span class="puzzle-name">${p[0]}</span>
       <span class="puzzle-count">${c} / ${max}</span>
@@ -335,30 +667,30 @@ function buildPuzzleRow(ai,pi,q){
   </div>`;
 }
 
-function buildGrid(){
-  const grid=document.getElementById('album-grid');
-  grid.innerHTML='';
-  let visible=0;
-  ALBUMS.forEach((album,ai)=>{
-    const s=albumStats(ai);
-    const pct=s.tot>0?Math.round(s.got/s.tot*100):0;
-    const isDone=s.done===s.count;
-    const q=searchQ.toLowerCase();
-    const nameMatch=album.name.toLowerCase().includes(q);
-    const puzzleMatch=album.p.some(p=>p[0].toLowerCase().includes(q));
-    if(q&&!nameMatch&&!puzzleMatch)return;
-    if(filter==='complete'&&!isDone)return;
-    if(filter==='incomplete'&&isDone)return;
+function buildGrid() {
+  const grid = document.getElementById('album-grid');
+  grid.innerHTML = '';
+  let visible = 0;
+  ALBUMS.forEach((album, ai) => {
+    const s = albumStats(ai);
+    const pct = s.tot > 0 ? Math.round(s.got / s.tot * 100) : 0;
+    const isDone = s.done === s.count;
+    const q = searchQ.toLowerCase();
+    const nameMatch = album.name.toLowerCase().includes(q);
+    const puzzleMatch = album.p.some(p => p[0].toLowerCase().includes(q));
+    if (q && !nameMatch && !puzzleMatch) return;
+    if (filter === 'complete' && !isDone) return;
+    if (filter === 'incomplete' && isDone) return;
     visible++;
-    const card=document.createElement('div');
-    card.className='album-card'+(isDone?' complete':'')+(expanded?' open':'');
-    card.dataset.ai=ai;
-    const pctText=isDone?'✓ Complete':(s.got+' / '+s.tot);
-    const pctCls=isDone?'album-pct done':'album-pct';
-    card.innerHTML=`
+    const card = document.createElement('div');
+    card.className = 'album-card' + (isDone ? ' complete' : '') + (expanded ? ' open' : '');
+    card.dataset.ai = ai;
+    const pctText = isDone ? '✓ Complete' : (s.got + ' / ' + s.tot);
+    const pctCls = isDone ? 'album-pct done' : 'album-pct';
+    card.innerHTML = `
       <div class="album-header">
         ${makeThumb(album.name)}
-        <span class="album-num">#${String(ai+1).padStart(2,'0')}</span>
+        <span class="album-num">#${String(ai + 1).padStart(2, '0')}</span>
         <span class="album-name">${album.name}</span>
         <div class="album-meta">
           <span class="${pctCls}">${pctText}</span>
@@ -375,184 +707,213 @@ function buildGrid(){
             <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy missing
           </button>
         </div>
-        <div class="puzzle-list">${album.p.map((_,pi)=>buildPuzzleRow(ai,pi,q)).join('')}</div>
+        <div class="puzzle-list">${album.p.map((_, pi) => buildPuzzleRow(ai, pi, q)).join('')}</div>
       </div>`;
-    card.querySelector('.album-header').addEventListener('click',()=>card.classList.toggle('open'));
+    card.querySelector('.album-header').addEventListener('click', () => card.classList.toggle('open'));
     grid.appendChild(card);
   });
-  if(visible===0){
-    const e=document.createElement('div');e.className='empty-state';e.textContent='No albums match your search.';grid.appendChild(e);
+  if (visible === 0) {
+    const e = document.createElement('div'); e.className = 'empty-state'; e.textContent = 'No albums match your search.'; grid.appendChild(e);
   }
 }
 
-// ── Copy missing shards only (for pasting in-game) ──────────────────────────
-function buildMissingText(ai){
-  const album=ALBUMS[ai];
-  const s=albumStats(ai);
-  if(s.done===s.count) return `[${album.name}] — All complete! ✓`;
-  const lines=[`[${album.name}] — missing shards:`];
-  album.p.forEach((p,pi)=>{
-    const shards=state[ai][pi]||[];
-    const missing=shards.map((v,i)=>v?null:i+1).filter(v=>v!==null);
-    if(missing.length>0){
-      lines.push(`  ${p[0]}: ${missing.join(', ')}`);
-    }
+// ═══════════════════════════════════════════════════════
+// COPY / EXPORT / IMPORT
+// ═══════════════════════════════════════════════════════
+function buildMissingText(ai) {
+  const album = ALBUMS[ai];
+  const s = albumStats(ai);
+  if (s.done === s.count) return `[${album.name}] — All complete! ✓`;
+  const lines = [`[${album.name}] — missing shards:`];
+  album.p.forEach((p, pi) => {
+    const missing = (state[ai][pi] || []).map((v, i) => v ? null : i + 1).filter(v => v !== null);
+    if (missing.length > 0) lines.push(`  ${p[0]}: ${missing.join(', ')}`);
   });
   return lines.join('\n');
 }
 
-function buildAllMissingText(){
-  const lines=['Whiteout Survival — Missing Shards',''];
-  let anyMissing=false;
-  ALBUMS.forEach((album,ai)=>{
-    const s=albumStats(ai);
-    if(s.done===s.count) return;
-    anyMissing=true;
+function buildAllMissingText() {
+  const lines = ['Whiteout Survival — Missing Shards', ''];
+  let anyMissing = false;
+  ALBUMS.forEach((album, ai) => {
+    const s = albumStats(ai);
+    if (s.done === s.count) return;
+    anyMissing = true;
     lines.push(`[${album.name}]`);
-    album.p.forEach((p,pi)=>{
-      const shards=state[ai][pi]||[];
-      const missing=shards.map((v,i)=>v?null:i+1).filter(v=>v!==null);
-      if(missing.length>0){
-        lines.push(`  ${p[0]}: ${missing.join(', ')}`);
-      }
+    album.p.forEach((p, pi) => {
+      const missing = (state[ai][pi] || []).map((v, i) => v ? null : i + 1).filter(v => v !== null);
+      if (missing.length > 0) lines.push(`  ${p[0]}: ${missing.join(', ')}`);
     });
     lines.push('');
   });
-  if(!anyMissing) lines.push('All shards collected! ✓');
+  if (!anyMissing) lines.push('All shards collected! ✓');
   return lines.join('\n');
 }
 
-// ── Export ───────────────────────────────────────────────────────────────────
-document.getElementById('btn-export').addEventListener('click',()=>{
-  const payload={version:4,exported:new Date().toISOString(),state};
-  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;
-  a.download='ws-album-tracker-'+new Date().toISOString().slice(0,10)+'.json';
-  a.click();
+document.getElementById('btn-copy').addEventListener('click', () => {
+  navigator.clipboard.writeText(buildAllMissingText())
+    .then(() => toast('Missing shards copied!'))
+    .catch(() => toast('Copy failed'));
+});
+
+document.getElementById('btn-export').addEventListener('click', () => {
+  const payload = { version: 4, exported: new Date().toISOString(), state };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'ws-album-tracker-' + new Date().toISOString().slice(0, 10) + '.json'; a.click();
   URL.revokeObjectURL(url);
   toast('Progress exported!');
 });
 
-// ── Import ───────────────────────────────────────────────────────────────────
-document.getElementById('btn-import').addEventListener('click',()=>{
+document.getElementById('btn-import').addEventListener('click', () => {
   document.getElementById('import-file').click();
 });
-document.getElementById('import-file').addEventListener('change',e=>{
-  const file=e.target.files[0];
-  if(!file) return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    try{
-      const payload=JSON.parse(ev.target.result);
-      // Accept either raw state or wrapped {version,state}
-      const imported=payload.state||payload;
-      // Validate: should have numeric keys matching album count
-      let valid=true;
-      ALBUMS.forEach((_,ai)=>{
-        if(!imported[ai]) valid=false;
-      });
-      if(!valid) throw new Error('Invalid file format');
-      if(!confirm('Import this save? Your current progress will be replaced.')) return;
-      state=imported;
-      // Normalise lengths
-      ALBUMS.forEach((_,ai)=>{
-        ALBUMS[ai].p.forEach((p,pi)=>{
-          if(!Array.isArray(state[ai][pi])){
-            const old=state[ai][pi]||0;
-            state[ai][pi]=Array(p[1]).fill(false).map((_,i)=>i<old);
-          }
-          if(state[ai][pi].length!==p[1]){
-            const arr=Array(p[1]).fill(false);
-            state[ai][pi].forEach((v,i)=>{if(i<p[1])arr[i]=v;});
-            state[ai][pi]=arr;
-          }
-        });
-      });
-      save();buildGrid();updateGlobal();
+
+document.getElementById('import-file').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const payload = JSON.parse(ev.target.result);
+      const imported = payload.state || payload;
+      let valid = true;
+      ALBUMS.forEach((_, ai) => { if (!imported[ai]) valid = false; });
+      if (!valid) throw new Error('Invalid file format');
+      if (!confirm('Import this save? Your current progress will be replaced.')) return;
+      state = imported;
+      normaliseState();
+      save();
+      buildGrid();
+      updateGlobal();
       toast('Progress imported!');
-    }catch(err){
-      toast('Import failed — invalid file');
-    }
-    // Reset input so re-importing same file works
-    e.target.value='';
+    } catch(err) { toast('Import failed — invalid file'); }
+    e.target.value = '';
   };
   reader.readAsText(file);
 });
 
-// ── Copy progress (full, with missing shard numbers) ─────────────────────────
-document.getElementById('btn-copy').addEventListener('click',()=>{
-  navigator.clipboard.writeText(buildAllMissingText())
-    .then(()=>toast('Missing shards copied!'))
-    .catch(()=>toast('Copy failed'));
-});
-
-document.getElementById('album-grid').addEventListener('click',e=>{
-  const pip=e.target.closest('.shard-pip');
-  if(pip){
-    const ai=+pip.dataset.ai,pi=+pip.dataset.pi,si=+pip.dataset.si;
-    state[ai][pi][si]=!state[ai][pi][si];
-    save();updateCard(ai);updateGlobal();return;
+// ═══════════════════════════════════════════════════════
+// INTERACTIONS
+// ═══════════════════════════════════════════════════════
+document.getElementById('album-grid').addEventListener('click', e => {
+  const pip = e.target.closest('.shard-pip');
+  if (pip) {
+    const ai = +pip.dataset.ai, pi = +pip.dataset.pi, si = +pip.dataset.si;
+    state[ai][pi][si] = !state[ai][pi][si];
+    save(); updateCard(ai); updateGlobal(); return;
   }
-  const mOne=e.target.closest('.max-btn');
-  if(mOne){
-    const ai=+mOne.dataset.maxone,pi=+mOne.dataset.pi;
-    state[ai][pi]=state[ai][pi].map(()=>true);
-    save();updateCard(ai);updateGlobal();return;
+  const mOne = e.target.closest('.max-btn');
+  if (mOne) {
+    const ai = +mOne.dataset.maxone, pi = +mOne.dataset.pi;
+    state[ai][pi] = state[ai][pi].map(() => true);
+    save(); updateCard(ai); updateGlobal(); return;
   }
-  const mAll=e.target.closest('[data-maxall]');
-  if(mAll){
-    const ai=+mAll.dataset.maxall;
-    ALBUMS[ai].p.forEach((_,pi)=>{state[ai][pi]=state[ai][pi].map(()=>true);});
-    save();updateCard(ai);updateGlobal();return;
+  const mAll = e.target.closest('[data-maxall]');
+  if (mAll) {
+    const ai = +mAll.dataset.maxall;
+    ALBUMS[ai].p.forEach((_, pi) => { state[ai][pi] = state[ai][pi].map(() => true); });
+    save(); updateCard(ai); updateGlobal(); return;
   }
-  const cAlb=e.target.closest('[data-copyalb]');
-  if(cAlb){
-    const ai=+cAlb.dataset.copyalb;
+  const cAlb = e.target.closest('[data-copyalb]');
+  if (cAlb) {
+    const ai = +cAlb.dataset.copyalb;
     navigator.clipboard.writeText(buildMissingText(ai))
-      .then(()=>toast('Missing shards copied!'))
-      .catch(()=>toast('Copy failed'));
+      .then(() => toast('Missing shards copied!'))
+      .catch(() => toast('Copy failed'));
     return;
   }
-},true);
+}, true);
 
-document.getElementById('btn-reset').addEventListener('click',()=>{
-  if(!confirm('Reset all shard progress? This cannot be undone.'))return;
-  ALBUMS.forEach((_,ai)=>ALBUMS[ai].p.forEach((p,pi)=>{state[ai][pi]=Array(p[1]).fill(false);}));
-  save();buildGrid();updateGlobal();toast('Progress reset.');
+document.getElementById('btn-reset').addEventListener('click', () => {
+  if (!confirm('Reset all shard progress? This cannot be undone.')) return;
+  ALBUMS.forEach((_, ai) => ALBUMS[ai].p.forEach((p, pi) => { state[ai][pi] = Array(p[1]).fill(false); }));
+  save(); buildGrid(); updateGlobal(); toast('Progress reset.');
 });
 
-document.getElementById('btn-expand').addEventListener('click',()=>{
-  expanded=!expanded;
-  document.querySelectorAll('.album-card').forEach(c=>{if(expanded)c.classList.add('open');else c.classList.remove('open');});
-  document.getElementById('btn-expand').innerHTML=expanded
-    ?`<svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="10" y1="14" x2="3" y2="21"/><line x1="21" y1="3" x2="14" y2="10"/></svg> Collapse all`
-    :`<svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg> Expand all`;
+document.getElementById('btn-expand').addEventListener('click', () => {
+  expanded = !expanded;
+  document.querySelectorAll('.album-card').forEach(c => { if (expanded) c.classList.add('open'); else c.classList.remove('open'); });
+  document.getElementById('btn-expand').innerHTML = expanded
+    ? `<svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="10" y1="14" x2="3" y2="21"/><line x1="21" y1="3" x2="14" y2="10"/></svg> Collapse all`
+    : `<svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg> Expand all`;
 });
 
-document.querySelectorAll('.fbtn').forEach(b=>{
-  b.addEventListener('click',()=>{document.querySelectorAll('.fbtn').forEach(x=>x.classList.remove('active'));b.classList.add('active');filter=b.dataset.f;buildGrid();});
+document.querySelectorAll('.fbtn').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.fbtn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    filter = b.dataset.f;
+    buildGrid();
+  });
 });
 
-document.getElementById('search-input').addEventListener('input',e=>{
-  searchQ=e.target.value.trim();if(searchQ){expanded=true;}buildGrid();
+document.getElementById('search-input').addEventListener('input', e => {
+  searchQ = e.target.value.trim();
+  if (searchQ) expanded = true;
+  buildGrid();
 });
 
-function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+// ═══════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
 
-(function(){
-  const canvas=document.getElementById('snow-canvas');
-  const ctx=canvas.getContext('2d');
-  let W,H,flakes=[];
-  function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}
-  window.addEventListener('resize',resize);resize();
-  for(let i=0;i<80;i++){flakes.push({x:Math.random()*window.innerWidth,y:Math.random()*window.innerHeight,r:0.8+Math.random()*2.2,speed:0.3+Math.random()*0.8,drift:(Math.random()-0.5)*0.3,opacity:0.2+Math.random()*0.5});}
-  function draw(){ctx.clearRect(0,0,W,H);flakes.forEach(f=>{ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,Math.PI*2);ctx.fillStyle=`rgba(180,215,255,${f.opacity})`;ctx.fill();f.y+=f.speed;f.x+=f.drift;if(f.y>H+5){f.y=-5;f.x=Math.random()*W;}if(f.x>W+5)f.x=-5;if(f.x<-5)f.x=W+5;});requestAnimationFrame(draw);}
+// ═══════════════════════════════════════════════════════
+// SNOW
+// ═══════════════════════════════════════════════════════
+(function() {
+  const canvas = document.getElementById('snow-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, flakes = [];
+  function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+  window.addEventListener('resize', resize); resize();
+  for (let i = 0; i < 80; i++) {
+    flakes.push({ x: Math.random() * window.innerWidth, y: Math.random() * window.innerHeight, r: 0.8 + Math.random() * 2.2, speed: 0.3 + Math.random() * 0.8, drift: (Math.random() - 0.5) * 0.3, opacity: 0.2 + Math.random() * 0.5 });
+  }
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    flakes.forEach(f => {
+      ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(180,215,255,${f.opacity})`; ctx.fill();
+      f.y += f.speed; f.x += f.drift;
+      if (f.y > H + 5) { f.y = -5; f.x = Math.random() * W; }
+      if (f.x > W + 5) f.x = -5; if (f.x < -5) f.x = W + 5;
+    });
+    requestAnimationFrame(draw);
+  }
   draw();
 })();
 
-load();buildGrid();updateGlobal();
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+async function init() {
+  load();
+  buildGrid();
+  updateGlobal();
+
+  // Restore session if any
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) {
+    currentUser = session.user;
+    updateAccountUI();
+    await pullFromCloud();
+  }
+
+  // Keep UI in sync if session changes (e.g. token refresh, logout from another tab)
+  sb.auth.onAuthStateChange((_event, session) => {
+    currentUser = session?.user ?? null;
+    updateAccountUI();
+  });
+}
+
+init();
 </script>
 </body>
 </html>
