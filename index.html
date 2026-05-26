@@ -505,6 +505,60 @@
 
   .shard-val.max { color: var(--done-text); }
 
+  .max-btn {
+    height: 22px;
+    padding: 0 7px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    color: var(--text-muted);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: background 0.1s, color 0.1s, border-color 0.1s;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .max-btn:hover { background: var(--accent-dim); color: var(--ice1); border-color: var(--accent); }
+  .max-btn:active { transform: scale(0.92); }
+  .puzzle-row.done .max-btn { opacity: 0.35; pointer-events: none; }
+
+  .album-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+
+  .album-act-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    padding: 5px 11px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .album-act-btn:hover { background: var(--bg2); color: var(--text-primary); }
+  .album-act-btn svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+  .album-act-btn.maxall { border-color: var(--accent-dim); color: var(--accent-bright); }
+  .album-act-btn.maxall:hover { background: rgba(46,137,200,0.12); }
+
   /* ── TOAST ── */
   #toast {
     position: fixed;
@@ -775,6 +829,16 @@ function buildGrid(){
       </div>
       <div class="album-body">
         <div class="album-progress-bar"><div class="album-progress-fill" style="width:${pct}%"></div></div>
+        <div class="album-actions">
+          <button class="album-act-btn maxall" data-maxall="${ai}">
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            Max all
+          </button>
+          <button class="album-act-btn copyalb" data-copyalb="${ai}">
+            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Copy album
+          </button>
+        </div>
         <div class="puzzle-list">${album.p.map((p,pi)=>{
           const cur=state[ai][pi]||0,max=p[1],done=cur>=max;
           const highlight=q&&p[0].toLowerCase().includes(q)?' style="background:rgba(46,137,200,0.08)"':'';
@@ -784,6 +848,7 @@ function buildGrid(){
               <button class="shard-btn" data-ai="${ai}" data-pi="${pi}" data-d="-1" aria-label="Remove shard">−</button>
               <span class="shard-val${done?' max':''}">${cur} / ${max}</span>
               <button class="shard-btn" data-ai="${ai}" data-pi="${pi}" data-d="1" aria-label="Add shard">+</button>
+              <button class="max-btn" data-maxone="${ai}" data-pi="${pi}" aria-label="Max this puzzle">MAX</button>
             </div>
           </div>`;
         }).join('')}</div>
@@ -802,12 +867,43 @@ function buildGrid(){
 }
 
 document.getElementById('album-grid').addEventListener('click',e=>{
-  const btn=e.target.closest('.shard-btn');
-  if(!btn)return;
-  const ai=+btn.dataset.ai,pi=+btn.dataset.pi,d=+btn.dataset.d;
-  const max=ALBUMS[ai].p[pi][1];
-  state[ai][pi]=Math.max(0,Math.min(max,(state[ai][pi]||0)+d));
-  save();updateCard(ai);updateGlobal();
+  // shard +/-
+  const sBtn=e.target.closest('.shard-btn');
+  if(sBtn){
+    const ai=+sBtn.dataset.ai,pi=+sBtn.dataset.pi,d=+sBtn.dataset.d;
+    const max=ALBUMS[ai].p[pi][1];
+    state[ai][pi]=Math.max(0,Math.min(max,(state[ai][pi]||0)+d));
+    save();updateCard(ai);updateGlobal();return;
+  }
+  // max single puzzle
+  const mOne=e.target.closest('.max-btn');
+  if(mOne){
+    const ai=+mOne.dataset.maxone,pi=+mOne.dataset.pi;
+    state[ai][pi]=ALBUMS[ai].p[pi][1];
+    save();updateCard(ai);updateGlobal();return;
+  }
+  // max all puzzles in album
+  const mAll=e.target.closest('[data-maxall]');
+  if(mAll){
+    const ai=+mAll.dataset.maxall;
+    ALBUMS[ai].p.forEach((_,pi)=>{state[ai][pi]=ALBUMS[ai].p[pi][1];});
+    save();updateCard(ai);updateGlobal();return;
+  }
+  // copy single album
+  const cAlb=e.target.closest('[data-copyalb]');
+  if(cAlb){
+    const ai=+cAlb.dataset.copyalb;
+    const album=ALBUMS[ai];
+    const s=albumStats(ai);
+    const pct=s.tot>0?Math.round(s.got/s.tot*100):0;
+    const lines=[`[${album.name}]${s.done===s.count?' ✓':''} — ${s.got}/${s.tot} (${pct}%)`];
+    album.p.forEach((p,pi)=>{
+      const c=state[ai][pi]||0,m=p[1];
+      lines.push(`  ${p[0]}: ${c}/${m}${c>=m?' ✓':''}`);
+    });
+    navigator.clipboard.writeText(lines.join('\n')).then(()=>toast('Album copied!')).catch(()=>toast('Copy failed'));
+    return;
+  }
 },true);
 
 document.getElementById('btn-copy').addEventListener('click',()=>{
