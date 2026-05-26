@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WS Album Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg0: #060e1c;
+    --bg1: #0a1628;
+    --bg2: #0d1f3c;
+    --bg3: #112038;
+    --bg4: #0b1a30;
+    --border: #1a3358;
+    --border2: #112038;
+    --accent: #2e89c8;
+    --accent-dim: #1e5f94;
+    --accent-bright: #5bbde8;
+    --accent-glow: rgba(46,137,200,0.15);
+    --text-primary: #d4eaff;
+    --text-secondary: #7fa8cc;
+    --text-muted: #3d5e80;
+    --text-num: #7ec8f0;
+    --done-bg: #0d2040;
+    --done-border: #1e4a7a;
+    --done-text: #4aadee;
+    --complete-border: #2e6aad;
+    --ice1: #b8d9f5;
+    --ice2: #6aaee0;
+  }
+
+  html { height: 100%; }
+
+  body {
+    min-height: 100%;
+    background: var(--bg0);
+    color: var(--text-primary);
+    font-family: 'Barlow', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+
+  /* ── SNOW CANVAS ── */
+  #snow-canvas {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.35;
+  }
+
+  /* ── HEADER ── */
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(6,14,28,0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+  }
+
+  .header-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    height: 56px;
+    flex-wrap: wrap;
+  }
+
+  .site-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+    background: var(--accent-dim);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+
+  .logo-text {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 0.03em;
+    line-height: 1;
+  }
+
+  .logo-sub {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-top: 1px;
+  }
+
+  .header-stats {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  .hstat {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .hstat-val {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-num);
+    line-height: 1;
+  }
+
+  .hstat-lbl {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+  }
+
+  .hstat-sep {
+    width: 1px;
+    height: 28px;
+    background: var(--border);
+  }
+
+  /* ── GLOBAL PROGRESS BAR ── */
+  .progress-strip {
+    background: var(--bg1);
+    border-bottom: 1px solid var(--border2);
+    padding: 10px 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .progress-strip-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .progress-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    white-space: nowrap;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .progress-track {
+    flex: 1;
+    height: 8px;
+    background: var(--bg3);
+    border-radius: 99px;
+    overflow: hidden;
+    border: 1px solid var(--border2);
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: var(--accent);
+    transition: width 0.4s ease;
+    position: relative;
+  }
+
+  .progress-fill::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 6px;
+    height: 100%;
+    background: var(--accent-bright);
+    border-radius: 99px;
+  }
+
+  .progress-pct {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--accent-bright);
+    min-width: 38px;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  /* ── TOOLBAR ── */
+  .toolbar {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    position: relative;
+    z-index: 1;
+  }
+
+  .filter-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 3px;
+  }
+
+  .fbtn {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    padding: 5px 12px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .fbtn:hover { color: var(--text-secondary); background: var(--bg3); }
+  .fbtn.active { background: var(--accent-dim); color: var(--ice1); }
+
+  .tbtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    padding: 7px 13px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .tbtn:hover { background: var(--bg3); color: var(--text-primary); }
+  .tbtn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  .tbtn-accent { border-color: var(--accent-dim); color: var(--accent-bright); }
+  .tbtn-accent:hover { background: rgba(46,137,200,0.12); }
+
+  .tbtn-reset { margin-left: auto; }
+
+  .search-wrap {
+    position: relative;
+    flex: 1;
+    max-width: 260px;
+  }
+
+  .search-wrap svg {
+    position: absolute;
+    left: 9px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    stroke: var(--text-muted);
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+  }
+
+  #search-input {
+    width: 100%;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-family: 'Barlow', sans-serif;
+    font-size: 13px;
+    padding: 7px 10px 7px 30px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  #search-input::placeholder { color: var(--text-muted); }
+  #search-input:focus { border-color: var(--accent-dim); }
+
+  /* ── ALBUM GRID ── */
+  .album-grid {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px 80px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 12px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── ALBUM CARD ── */
+  .album-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color 0.25s;
+  }
+
+  .album-card.complete { border-color: var(--complete-border); }
+
+  .album-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 14px;
+    cursor: pointer;
+    user-select: none;
+    background: var(--bg4);
+    border-bottom: 1px solid var(--border2);
+    transition: background 0.15s;
+  }
+
+  .album-header:hover { background: var(--bg3); }
+
+  .album-num {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 2px 6px;
+    letter-spacing: 0.06em;
+    flex-shrink: 0;
+  }
+
+  .album-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: 0.03em;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .album-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .album-pct {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  .album-pct.done { color: var(--done-text); }
+
+  .chevron {
+    width: 14px;
+    height: 14px;
+    stroke: var(--text-muted);
+    fill: none;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }
+
+  .album-card.open .chevron { transform: rotate(180deg); }
+
+  .album-body {
+    display: none;
+    padding: 10px 14px 14px;
+  }
+
+  .album-card.open .album-body { display: block; }
+
+  .album-progress-bar {
+    height: 3px;
+    background: var(--bg3);
+    border-radius: 99px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+
+  .album-progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 99px;
+    transition: width 0.3s;
+  }
+
+  /* ── PUZZLE ROWS ── */
+  .puzzle-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .puzzle-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 9px;
+    border-radius: 8px;
+    border: 1px solid var(--border2);
+    background: var(--bg1);
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .puzzle-row.done {
+    background: var(--done-bg);
+    border-color: var(--done-border);
+  }
+
+  .puzzle-name {
+    flex: 1;
+    font-size: 12px;
+    color: var(--text-secondary);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .puzzle-row.done .puzzle-name { color: var(--accent-bright); }
+
+  .shard-ctrl {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+  }
+
+  .shard-btn {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    color: var(--text-muted);
+    font-size: 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.1s, color 0.1s;
+    padding: 0;
+    line-height: 1;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  .shard-btn:hover { background: var(--bg3); color: var(--text-num); }
+  .shard-btn:active { transform: scale(0.92); }
+
+  .shard-val {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    min-width: 36px;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .shard-val.max { color: var(--done-text); }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(70px);
+    background: var(--bg2);
+    color: var(--accent-bright);
+    border: 1px solid var(--accent-dim);
+    padding: 9px 20px;
+    border-radius: 10px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    z-index: 9999;
+    transition: transform 0.3s ease;
+    pointer-events: none;
+    white-space: nowrap;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+  }
+
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    grid-column: 1/-1;
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--text-muted);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 16px;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── MOBILE ── */
+  @media (max-width: 600px) {
+    .header-inner { height: auto; padding: 10px 0; gap: 10px; }
+    .header-stats { gap: 12px; }
+    .hstat-val { font-size: 15px; }
+    .hstat:nth-child(5), .hstat-sep:nth-child(4) { display: none; }
+    .album-grid { grid-template-columns: 1fr; padding: 0 12px 60px; }
+    .toolbar { padding: 10px 12px; gap: 6px; }
+    .search-wrap { max-width: 100%; order: -1; flex: 0 0 100%; }
+    .tbtn-reset { margin-left: 0; }
+    .progress-strip { padding: 8px 12px; }
+    .site-header { padding: 0 12px; }
+    .logo-sub { display: none; }
+  }
+
+  @media (max-width: 400px) {
+    .header-stats { display: none; }
+  }
+
+  /* ── ICE CRYSTAL BG ── */
+  .crystal-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .crystal-bg svg {
+    position: absolute;
+    opacity: 0.03;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="snow-canvas"></canvas>
+
+<div class="crystal-bg">
+  <svg width="600" height="600" style="top:-100px;right:-150px;" viewBox="0 0 200 200">
+    <polygon points="100,10 115,40 150,40 122,62 132,95 100,75 68,95 78,62 50,40 85,40" fill="#2e89c8"/>
+    <polygon points="100,30 110,52 135,52 114,67 121,90 100,77 79,90 86,67 65,52 90,52" fill="#5bbde8"/>
+  </svg>
+  <svg width="400" height="400" style="bottom:-80px;left:-80px;" viewBox="0 0 200 200">
+    <polygon points="100,10 115,40 150,40 122,62 132,95 100,75 68,95 78,62 50,40 85,40" fill="#2e89c8"/>
+  </svg>
+</div>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="site-logo">
+      <div class="logo-icon">❄</div>
+      <div>
+        <div class="logo-text">Album Tracker</div>
+        <div class="logo-sub">Whiteout Survival</div>
+      </div>
+    </div>
+    <div class="header-stats">
+      <div class="hstat">
+        <span class="hstat-val" id="h-albums">0/16</span>
+        <span class="hstat-lbl">Albums</span>
+      </div>
+      <div class="hstat-sep"></div>
+      <div class="hstat">
+        <span class="hstat-val" id="h-puzzles">0/144</span>
+        <span class="hstat-lbl">Puzzles</span>
+      </div>
+      <div class="hstat-sep"></div>
+      <div class="hstat">
+        <span class="hstat-val" id="h-shards">0/0</span>
+        <span class="hstat-lbl">Shards</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="progress-strip">
+  <div class="progress-strip-inner">
+    <span class="progress-label">Progress</span>
+    <div class="progress-track">
+      <div class="progress-fill" id="g-bar" style="width:0%"></div>
+    </div>
+    <span class="progress-pct" id="g-pct">0%</span>
+  </div>
+</div>
+
+<div class="toolbar">
+  <div class="search-wrap">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="search" id="search-input" placeholder="Search albums or puzzles…">
+  </div>
+  <div class="filter-group">
+    <button class="fbtn active" data-f="all">All</button>
+    <button class="fbtn" data-f="incomplete">Incomplete</button>
+    <button class="fbtn" data-f="complete">Complete</button>
+  </div>
+  <button class="tbtn" id="btn-expand">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    Expand all
+  </button>
+  <button class="tbtn tbtn-accent" id="btn-copy">
+    <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+    Copy progress
+  </button>
+  <button class="tbtn tbtn-reset" id="btn-reset">
+    <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.41"/></svg>
+    Reset
+  </button>
+</div>
+
+<main class="album-grid" id="album-grid"></main>
+
+<div id="toast"></div>
+
+<script>
+const ALBUMS=[
+  {name:"Daybreak Island",p:[["Daybreak Island Legend",12],["Island of Dreams",12],["Tree of Life",12],["Call of the Sea",15],["Distant Resonance",15],["Caravan Visit",15],["New Home",18],["Daybreak Song",18],["Island Splendors",18]]},
+  {name:"Tundra Alliance",p:[["Alliance-Building",12],["One Heart",12],["Heroes' Aid",15],["Alliance Resources",15],["Twisted Obsession",15],["Virtues and Crimes",18],["Children of the New World",18],["Horn of Command",18],["Battlefield Epic",18]]},
+  {name:"Battlefield Epic",p:[["Imperial Foundry",12],["King of the Battlefield",15],["Orichalcum",15],["City of Kings",15],["Pilot's Paradise",15],["Great Contest",18],["Canyon Clash",18],["Hero's Glory",18],["Grand Banquet",18]]},
+  {name:"Spectacular Adventures",p:[["Fishing Tournament",12],["Snowbusters",15],["Bandit",15],["Red-Haired Joe",15],["A Queen Arises",15],["The Eagles",18],["Bounty Hunter",18],["Wandering Merchant",18],["Tundra Adventure",18]]},
+  {name:"Divine Weapons",p:[["Master Blacksmith",12],["Legendary Divine Weapon",15],["Tundra Trade Route",15],["Merchant Escort",15],["Cryptid Invasion",15],["Steam Rhapsody",18],["Ice Journey",18],["Essence Stones",18],["Exotic Charm",18]]},
+  {name:"The Labyrinth",p:[["Underworld Mysteries",12],["The World Below",15],["Digging To Danger",15],["Fungal Forest",15],["Great Furnace",15],["The Undergrounders",18],["The Project",18],["Gaia Heart",18],["The Deepest Echo",18]]},
+  {name:"Nature's Strength",p:[["Friend of Nature",12],["Wild At Heart",15],["Beast Unleashed",15],["Wild Legion",15],["Pets-In-Arms",15],["Master Tamer",18],["Superhuman Strength",18],["Kasia's Struggle",18],["Call of the Wild",18]]},
+  {name:"Crystalline Mysteries",p:[["Fiery Crystal",12],["Mining the Fire",15],["Heirs of Empire",15],["Sins of Empire",15],["Fire Reborn",15],["The Burning Legion",18],["Promises of Fire",18],["Crystalline Rage",18],["Fire Crystal Era",18]]},
+  {name:"Ballad of Wind and Cold",p:[["Honor and Glory",12],["Frostwind Track",15],["Words of the Forgotten",15],["Monument to the Flame",15],["Alliance Showdown",15],["State Versus State",18],["The Summit of Battle",18],["Castle of Conflict",18],["Remaker of Order",18]]},
+  {name:"Infernal Power",p:[["Helios Warriors",12],["Crystal Strength",15],["Crystal Fragmentation",15],["Miner Madness",15],["Engine of the Future",15],["Risky Business",18],["Treasure of Empire",18],["The Communicative Heart",18],["The Guardians",18]]},
+  {name:"Kings of Combat",p:[["League of Honor",12],["A Tournament of Heroes",15],["Duel of Greatness",15],["The Callisto",15],["Kings of Combat",15],["The Arena Gamers",18],["The Helios Cannon",18],["Behemoth",18],["The Bell Tolls",18]]},
+  {name:"Prerogative of the Flame",p:[["Whispers of the World",12],["Temptations of Power",15],["Doomsday Man",15],["The Hunters",15],["The Mad King",15],["The Last Empress",18],["The Last Collapse",18],["A Long Slumber",18],["Sky City",18]]},
+  {name:"Frostdragon Empire",p:[["Frostdragon Empire",12],["The Dragonic Legend",15],["Wings of Empire",15],["The Dragonic Legion",15],["Rediscovery",15],["Future Vision",18],["War and Wealth",18],["Banquet for a King",18],["A Tyrant Crowned",18]]},
+  {name:"Rekindled Flames",p:[["Furnace",9],["City Founding",9],["Dawn Alliance",9],["Decisions",12],["Menace Afoot",12],["Heroes",12],["Food Power",15],["A New Order",15],["True Explorer",15]]},
+  {name:"Song of Heroes",p:[["Dauntless Heroes",9],["Snow Angel",9],["Everyday Champions",12],["Arcadia's Legacy",12],["I Am the Fire.",12],["Artisan Architect",15],["Life Vs Death",15],["The Icebreakers",15],["Epic of a New World",18]]},
+  {name:"Explore the World",p:[["War on Winter",9],["Exploration Journal",12],["Hunting Guild",12],["The Raging Bear",12],["Treasure Kingdom",15],["Wealth Is Knowledge",15],["Ruins of Old",15],["Cryptid Days",18],["Call of the Stars",18]]}
+];
+
+const SK='ws_tracker_v3';
+let state={},expanded=false,filter='all',searchQ='';
+
+function load(){
+  try{const s=localStorage.getItem(SK);if(s)state=JSON.parse(s);}catch(e){}
+  ALBUMS.forEach((_,ai)=>{
+    if(!state[ai])state[ai]={};
+    ALBUMS[ai].p.forEach((_,pi)=>{if(state[ai][pi]===undefined)state[ai][pi]=0;});
+  });
+}
+
+function save(){try{localStorage.setItem(SK,JSON.stringify(state));}catch(e){}}
+
+function albumStats(ai){
+  let got=0,tot=0,done=0;
+  ALBUMS[ai].p.forEach((p,pi)=>{
+    const c=state[ai][pi]||0;
+    got+=c;tot+=p[1];
+    if(c>=p[1])done++;
+  });
+  return{got,tot,done,count:ALBUMS[ai].p.length};
+}
+
+function globalStats(){
+  let gs=0,ts=0,gp=0,tp=0,ga=0;
+  ALBUMS.forEach((_,ai)=>{
+    const s=albumStats(ai);
+    gs+=s.got;ts+=s.tot;gp+=s.done;tp+=s.count;
+    if(s.done===s.count)ga++;
+  });
+  return{gs,ts,gp,tp,ga};
+}
+
+function updateGlobal(){
+  const g=globalStats();
+  document.getElementById('h-albums').textContent=g.ga+'/16';
+  document.getElementById('h-puzzles').textContent=g.gp+'/'+g.tp;
+  document.getElementById('h-shards').textContent=g.gs+'/'+g.ts;
+  const pct=g.ts>0?Math.round(g.gs/g.ts*100):0;
+  document.getElementById('g-pct').textContent=pct+'%';
+  document.getElementById('g-bar').style.width=pct+'%';
+}
+
+function updateCard(ai){
+  const s=albumStats(ai);
+  const pct=s.tot>0?Math.round(s.got/s.tot*100):0;
+  const card=document.querySelector('[data-ai="'+ai+'"]');
+  if(!card)return;
+  const fill=card.querySelector('.album-progress-fill');
+  if(fill)fill.style.width=pct+'%';
+  const pctEl=card.querySelector('.album-pct');
+  if(pctEl){
+    if(s.done===s.count){pctEl.textContent='✓ Complete';pctEl.className='album-pct done';}
+    else{pctEl.textContent=s.got+' / '+s.tot;pctEl.className='album-pct';}
+  }
+  if(s.done===s.count)card.classList.add('complete');else card.classList.remove('complete');
+  ALBUMS[ai].p.forEach((p,pi)=>{
+    const row=card.querySelector('[data-pi="'+pi+'"]');
+    if(!row)return;
+    const cur=state[ai][pi]||0,max=p[1],done=cur>=max;
+    const sv=row.querySelector('.shard-val');
+    if(sv){sv.textContent=cur+' / '+max;sv.className='shard-val'+(done?' max':'');}
+    if(done)row.classList.add('done');else row.classList.remove('done');
+  });
+}
+
+function buildGrid(){
+  const grid=document.getElementById('album-grid');
+  grid.innerHTML='';
+  let visible=0;
+  ALBUMS.forEach((album,ai)=>{
+    const s=albumStats(ai);
+    const pct=s.tot>0?Math.round(s.got/s.tot*100):0;
+    const isDone=s.done===s.count;
+
+    const q=searchQ.toLowerCase();
+    const nameMatch=album.name.toLowerCase().includes(q);
+    const puzzleMatch=album.p.some(p=>p[0].toLowerCase().includes(q));
+    if(q&&!nameMatch&&!puzzleMatch)return;
+    if(filter==='complete'&&!isDone)return;
+    if(filter==='incomplete'&&isDone)return;
+
+    visible++;
+    const card=document.createElement('div');
+    card.className='album-card'+(isDone?' complete':'')+(expanded?' open':'');
+    card.dataset.ai=ai;
+
+    const pctText=isDone?'✓ Complete':(s.got+' / '+s.tot);
+    const pctCls=isDone?'album-pct done':'album-pct';
+
+    card.innerHTML=`
+      <div class="album-header">
+        <span class="album-num">#${String(ai+1).padStart(2,'0')}</span>
+        <span class="album-name">${album.name}</span>
+        <div class="album-meta">
+          <span class="${pctCls}">${pctText}</span>
+          <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+      <div class="album-body">
+        <div class="album-progress-bar"><div class="album-progress-fill" style="width:${pct}%"></div></div>
+        <div class="puzzle-list">${album.p.map((p,pi)=>{
+          const cur=state[ai][pi]||0,max=p[1],done=cur>=max;
+          const highlight=q&&p[0].toLowerCase().includes(q)?' style="background:rgba(46,137,200,0.08)"':'';
+          return `<div class="puzzle-row${done?' done':''}" data-pi="${pi}"${highlight}>
+            <span class="puzzle-name">${p[0]}</span>
+            <div class="shard-ctrl">
+              <button class="shard-btn" data-ai="${ai}" data-pi="${pi}" data-d="-1" aria-label="Remove shard">−</button>
+              <span class="shard-val${done?' max':''}">${cur} / ${max}</span>
+              <button class="shard-btn" data-ai="${ai}" data-pi="${pi}" data-d="1" aria-label="Add shard">+</button>
+            </div>
+          </div>`;
+        }).join('')}</div>
+      </div>`;
+
+    card.querySelector('.album-header').addEventListener('click',()=>card.classList.toggle('open'));
+    grid.appendChild(card);
+  });
+
+  if(visible===0){
+    const e=document.createElement('div');
+    e.className='empty-state';
+    e.textContent='No albums match your search.';
+    grid.appendChild(e);
+  }
+}
+
+document.getElementById('album-grid').addEventListener('click',e=>{
+  const btn=e.target.closest('.shard-btn');
+  if(!btn)return;
+  const ai=+btn.dataset.ai,pi=+btn.dataset.pi,d=+btn.dataset.d;
+  const max=ALBUMS[ai].p[pi][1];
+  state[ai][pi]=Math.max(0,Math.min(max,(state[ai][pi]||0)+d));
+  save();updateCard(ai);updateGlobal();
+},true);
+
+document.getElementById('btn-copy').addEventListener('click',()=>{
+  const lines=['Whiteout Survival — Album Shard Progress',''];
+  let tg=0,tt=0;
+  ALBUMS.forEach((album,ai)=>{
+    const s=albumStats(ai);
+    const pct=s.tot>0?Math.round(s.got/s.tot*100):0;
+    lines.push(`[${album.name}]${s.done===s.count?' ✓':''} — ${s.got}/${s.tot} (${pct}%)`);
+    album.p.forEach((p,pi)=>{
+      const c=state[ai][pi]||0,m=p[1];
+      lines.push(`  ${p[0]}: ${c}/${m}${c>=m?' ✓':''}`);
+    });
+    lines.push('');tg+=s.got;tt+=s.tot;
+  });
+  lines.push(`Overall: ${tg}/${tt} shards (${tt>0?Math.round(tg/tt*100):0}%)`);
+  navigator.clipboard.writeText(lines.join('\n')).then(()=>toast('Progress copied!')).catch(()=>toast('Copy failed'));
+});
+
+document.getElementById('btn-reset').addEventListener('click',()=>{
+  if(!confirm('Reset all shard progress? This cannot be undone.'))return;
+  ALBUMS.forEach((_,ai)=>ALBUMS[ai].p.forEach((_,pi)=>{state[ai][pi]=0;}));
+  save();buildGrid();updateGlobal();toast('Progress reset.');
+});
+
+document.getElementById('btn-expand').addEventListener('click',()=>{
+  expanded=!expanded;
+  document.querySelectorAll('.album-card').forEach(c=>{
+    if(expanded)c.classList.add('open');else c.classList.remove('open');
+  });
+  document.getElementById('btn-expand').innerHTML=expanded
+    ?`<svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="10" y1="14" x2="3" y2="21"/><line x1="21" y1="3" x2="14" y2="10"/></svg> Collapse all`
+    :`<svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg> Expand all`;
+});
+
+document.querySelectorAll('.fbtn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.fbtn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');filter=b.dataset.f;buildGrid();
+  });
+});
+
+document.getElementById('search-input').addEventListener('input',e=>{
+  searchQ=e.target.value.trim();
+  if(searchQ){
+    expanded=true;
+  }
+  buildGrid();
+});
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+/* ── SNOW ── */
+(function(){
+  const canvas=document.getElementById('snow-canvas');
+  const ctx=canvas.getContext('2d');
+  let W,H,flakes=[];
+
+  function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}
+  window.addEventListener('resize',resize);
+  resize();
+
+  for(let i=0;i<80;i++){
+    flakes.push({
+      x:Math.random()*window.innerWidth,
+      y:Math.random()*window.innerHeight,
+      r:0.8+Math.random()*2.2,
+      speed:0.3+Math.random()*0.8,
+      drift:(Math.random()-0.5)*0.3,
+      opacity:0.2+Math.random()*0.5
+    });
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    flakes.forEach(f=>{
+      ctx.beginPath();
+      ctx.arc(f.x,f.y,f.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(180,215,255,${f.opacity})`;
+      ctx.fill();
+      f.y+=f.speed;
+      f.x+=f.drift;
+      if(f.y>H+5){f.y=-5;f.x=Math.random()*W;}
+      if(f.x>W+5)f.x=-5;
+      if(f.x<-5)f.x=W+5;
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+load();buildGrid();updateGlobal();
+</script>
+</body>
+</html>
