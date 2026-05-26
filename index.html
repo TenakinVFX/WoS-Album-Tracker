@@ -60,19 +60,9 @@
   .album-card.complete { border-color: var(--complete-border); }
   .album-header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; user-select: none; background: var(--bg4); border-bottom: 1px solid var(--border2); transition: background 0.15s; }
   .album-header:hover { background: var(--bg3); }
-
-  /* Album art thumbnail */
-  .album-thumb {
-    width: 40px; height: 40px; border-radius: 6px; flex-shrink: 0;
-    background: var(--bg3); border: 1px solid var(--border);
-    overflow: hidden; display: flex; align-items: center; justify-content: center;
-    font-size: 18px; color: var(--text-muted);
-  }
-  .album-thumb img {
-    width: 100%; height: 100%; object-fit: cover; display: block;
-  }
+  .album-thumb { width: 40px; height: 40px; border-radius: 6px; flex-shrink: 0; background: var(--bg3); border: 1px solid var(--border); overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--text-muted); }
+  .album-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .album-thumb img.errored { display: none; }
-
   .album-num { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 600; color: var(--accent); background: var(--bg3); border: 1px solid var(--border); border-radius: 5px; padding: 2px 6px; letter-spacing: 0.06em; flex-shrink: 0; }
   .album-name { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 600; color: var(--text-primary); letter-spacing: 0.03em; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .album-meta { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
@@ -95,9 +85,11 @@
   .max-btn { height: 20px; padding: 0 7px; border-radius: 5px; border: 1px solid var(--border); background: var(--bg2); color: var(--text-muted); font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.05em; cursor: pointer; display: flex; align-items: center; transition: all 0.1s; white-space: nowrap; -webkit-tap-highlight-color: transparent; touch-action: manipulation; flex-shrink: 0; }
   .max-btn:hover { background: var(--accent-dim); color: var(--ice1); border-color: var(--accent); }
   .puzzle-row.done .max-btn { opacity: 0.35; pointer-events: none; }
+
+  /* Shard pip with number label */
   .shard-grid { display: flex; flex-wrap: wrap; gap: 4px; }
   .shard-pip {
-    width: 22px; height: 22px; border-radius: 5px;
+    width: 26px; height: 26px; border-radius: 5px;
     border: 1.5px solid var(--border);
     background: var(--bg3);
     cursor: pointer;
@@ -106,17 +98,33 @@
     touch-action: manipulation;
     flex-shrink: 0;
     position: relative;
+    display: flex; align-items: center; justify-content: center;
   }
   .shard-pip:hover { border-color: var(--accent-dim); }
   .shard-pip:active { transform: scale(0.88); }
+  .shard-num {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 10px; font-weight: 600;
+    color: var(--text-muted);
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+    transition: color 0.1s, opacity 0.1s;
+  }
   .shard-pip.filled { background: var(--accent); border-color: var(--accent-bright); }
-  .shard-pip.filled::after { content: ''; position: absolute; inset: 4px; border-radius: 2px; background: rgba(255,255,255,0.25); }
+  .shard-pip.filled .shard-num { color: rgba(255,255,255,0.5); }
+  .shard-pip.filled::after { content: '✓'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.9); }
+
   .album-actions { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
   .album-act-btn { display: inline-flex; align-items: center; gap: 5px; font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 500; letter-spacing: 0.04em; padding: 5px 11px; border-radius: 7px; border: 1px solid var(--border); background: var(--bg3); color: var(--text-secondary); cursor: pointer; transition: all 0.15s; -webkit-tap-highlight-color: transparent; }
   .album-act-btn:hover { background: var(--bg2); color: var(--text-primary); }
   .album-act-btn svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
   .album-act-btn.maxall { border-color: var(--accent-dim); color: var(--accent-bright); }
   .album-act-btn.maxall:hover { background: rgba(46,137,200,0.12); }
+
+  /* Hidden file input for import */
+  #import-file { display: none; }
+
   #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(70px); background: var(--bg2); color: var(--accent-bright); border: 1px solid var(--accent-dim); padding: 9px 20px; border-radius: 10px; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 500; letter-spacing: 0.04em; z-index: 9999; transition: transform 0.3s ease; pointer-events: none; white-space: nowrap; box-shadow: 0 4px 24px rgba(0,0,0,0.5); }
   #toast.show { transform: translateX(-50%) translateY(0); }
   .empty-state { grid-column: 1/-1; text-align: center; padding: 48px 20px; color: var(--text-muted); font-family: 'Barlow Condensed', sans-serif; font-size: 16px; letter-spacing: 0.05em; }
@@ -187,6 +195,16 @@
     <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
     Copy progress
   </button>
+  <!-- Export / Import -->
+  <button class="tbtn" id="btn-export">
+    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Export
+  </button>
+  <button class="tbtn" id="btn-import">
+    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Import
+  </button>
+  <input type="file" id="import-file" accept=".json">
   <button class="tbtn tbtn-reset" id="btn-reset">
     <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.41"/></svg>
     Reset
@@ -293,11 +311,9 @@ function updateCard(ai){
   });
 }
 
-function makeThumb(albumName) {
-  const src = IMG_BASE + encodeURIComponent(albumName) + '.png';
-  return `<div class="album-thumb">
-    <img src="${src}" alt="${albumName}" onerror="this.classList.add('errored');this.parentElement.innerHTML='❄';">
-  </div>`;
+function makeThumb(albumName){
+  const src=IMG_BASE+encodeURIComponent(albumName)+'.png';
+  return `<div class="album-thumb"><img src="${src}" alt="${albumName}" onerror="this.classList.add('errored');this.parentElement.innerHTML='❄';"></div>`;
 }
 
 function buildPuzzleRow(ai,pi,q){
@@ -307,7 +323,8 @@ function buildPuzzleRow(ai,pi,q){
   const max=p[1];
   const done=c>=max;
   const highlight=q&&p[0].toLowerCase().includes(q.toLowerCase())?' style="background:rgba(46,137,200,0.08)"':'';
-  const pips=shards.map((v,si)=>`<div class="shard-pip${v?' filled':''}" data-ai="${ai}" data-pi="${pi}" data-si="${si}" title="Shard ${si+1}"></div>`).join('');
+  // Numbered pips — show number when unchecked, checkmark when filled
+  const pips=shards.map((v,si)=>`<div class="shard-pip${v?' filled':''}" data-ai="${ai}" data-pi="${pi}" data-si="${si}" title="Shard ${si+1}"><span class="shard-num">${si+1}</span></div>`).join('');
   return `<div class="puzzle-row${done?' done':''}" data-ai="${ai}" data-pi="${pi}"${highlight}>
     <div class="puzzle-row-top">
       <span class="puzzle-name">${p[0]}</span>
@@ -355,7 +372,7 @@ function buildGrid(){
             <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Max all
           </button>
           <button class="album-act-btn copyalb" data-copyalb="${ai}">
-            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy album
+            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy missing
           </button>
         </div>
         <div class="puzzle-list">${album.p.map((_,pi)=>buildPuzzleRow(ai,pi,q)).join('')}</div>
@@ -367,6 +384,109 @@ function buildGrid(){
     const e=document.createElement('div');e.className='empty-state';e.textContent='No albums match your search.';grid.appendChild(e);
   }
 }
+
+// ── Copy missing shards only (for pasting in-game) ──────────────────────────
+function buildMissingText(ai){
+  const album=ALBUMS[ai];
+  const s=albumStats(ai);
+  if(s.done===s.count) return `[${album.name}] — All complete! ✓`;
+  const lines=[`[${album.name}] — missing shards:`];
+  album.p.forEach((p,pi)=>{
+    const shards=state[ai][pi]||[];
+    const missing=shards.map((v,i)=>v?null:i+1).filter(v=>v!==null);
+    if(missing.length>0){
+      lines.push(`  ${p[0]}: ${missing.join(', ')}`);
+    }
+  });
+  return lines.join('\n');
+}
+
+function buildAllMissingText(){
+  const lines=['Whiteout Survival — Missing Shards',''];
+  let anyMissing=false;
+  ALBUMS.forEach((album,ai)=>{
+    const s=albumStats(ai);
+    if(s.done===s.count) return;
+    anyMissing=true;
+    lines.push(`[${album.name}]`);
+    album.p.forEach((p,pi)=>{
+      const shards=state[ai][pi]||[];
+      const missing=shards.map((v,i)=>v?null:i+1).filter(v=>v!==null);
+      if(missing.length>0){
+        lines.push(`  ${p[0]}: ${missing.join(', ')}`);
+      }
+    });
+    lines.push('');
+  });
+  if(!anyMissing) lines.push('All shards collected! ✓');
+  return lines.join('\n');
+}
+
+// ── Export ───────────────────────────────────────────────────────────────────
+document.getElementById('btn-export').addEventListener('click',()=>{
+  const payload={version:4,exported:new Date().toISOString(),state};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='ws-album-tracker-'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Progress exported!');
+});
+
+// ── Import ───────────────────────────────────────────────────────────────────
+document.getElementById('btn-import').addEventListener('click',()=>{
+  document.getElementById('import-file').click();
+});
+document.getElementById('import-file').addEventListener('change',e=>{
+  const file=e.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const payload=JSON.parse(ev.target.result);
+      // Accept either raw state or wrapped {version,state}
+      const imported=payload.state||payload;
+      // Validate: should have numeric keys matching album count
+      let valid=true;
+      ALBUMS.forEach((_,ai)=>{
+        if(!imported[ai]) valid=false;
+      });
+      if(!valid) throw new Error('Invalid file format');
+      if(!confirm('Import this save? Your current progress will be replaced.')) return;
+      state=imported;
+      // Normalise lengths
+      ALBUMS.forEach((_,ai)=>{
+        ALBUMS[ai].p.forEach((p,pi)=>{
+          if(!Array.isArray(state[ai][pi])){
+            const old=state[ai][pi]||0;
+            state[ai][pi]=Array(p[1]).fill(false).map((_,i)=>i<old);
+          }
+          if(state[ai][pi].length!==p[1]){
+            const arr=Array(p[1]).fill(false);
+            state[ai][pi].forEach((v,i)=>{if(i<p[1])arr[i]=v;});
+            state[ai][pi]=arr;
+          }
+        });
+      });
+      save();buildGrid();updateGlobal();
+      toast('Progress imported!');
+    }catch(err){
+      toast('Import failed — invalid file');
+    }
+    // Reset input so re-importing same file works
+    e.target.value='';
+  };
+  reader.readAsText(file);
+});
+
+// ── Copy progress (full, with missing shard numbers) ─────────────────────────
+document.getElementById('btn-copy').addEventListener('click',()=>{
+  navigator.clipboard.writeText(buildAllMissingText())
+    .then(()=>toast('Missing shards copied!'))
+    .catch(()=>toast('Copy failed'));
+});
 
 document.getElementById('album-grid').addEventListener('click',e=>{
   const pip=e.target.closest('.shard-pip');
@@ -390,37 +510,12 @@ document.getElementById('album-grid').addEventListener('click',e=>{
   const cAlb=e.target.closest('[data-copyalb]');
   if(cAlb){
     const ai=+cAlb.dataset.copyalb;
-    const album=ALBUMS[ai];
-    const s=albumStats(ai);
-    const pct=s.tot>0?Math.round(s.got/s.tot*100):0;
-    const lines=[`[${album.name}]${s.done===s.count?' ✓':''} — ${s.got}/${s.tot} (${pct}%)`];
-    album.p.forEach((p,pi)=>{
-      const c=puzzleCount(ai,pi),m=p[1];
-      const missing=state[ai][pi].map((v,i)=>v?null:i+1).filter(v=>v!==null);
-      lines.push(`  ${p[0]}: ${c}/${m}${c>=m?' ✓':(missing.length?' (missing: '+missing.join(',')+')':'')}`);
-    });
-    navigator.clipboard.writeText(lines.join('\n')).then(()=>toast('Album copied!')).catch(()=>toast('Copy failed'));
+    navigator.clipboard.writeText(buildMissingText(ai))
+      .then(()=>toast('Missing shards copied!'))
+      .catch(()=>toast('Copy failed'));
     return;
   }
 },true);
-
-document.getElementById('btn-copy').addEventListener('click',()=>{
-  const lines=['Whiteout Survival — Album Shard Progress',''];
-  let tg=0,tt=0;
-  ALBUMS.forEach((album,ai)=>{
-    const s=albumStats(ai);
-    const pct=s.tot>0?Math.round(s.got/s.tot*100):0;
-    lines.push(`[${album.name}]${s.done===s.count?' ✓':''} — ${s.got}/${s.tot} (${pct}%)`);
-    album.p.forEach((p,pi)=>{
-      const c=puzzleCount(ai,pi),m=p[1];
-      const missing=state[ai][pi].map((v,i)=>v?null:i+1).filter(v=>v!==null);
-      lines.push(`  ${p[0]}: ${c}/${m}${c>=m?' ✓':(missing.length?' (missing: '+missing.join(',')+')':'')}`);
-    });
-    lines.push('');tg+=s.got;tt+=s.tot;
-  });
-  lines.push(`Overall: ${tg}/${tt} shards (${tt>0?Math.round(tg/tt*100):0}%)`);
-  navigator.clipboard.writeText(lines.join('\n')).then(()=>toast('Progress copied!')).catch(()=>toast('Copy failed'));
-});
 
 document.getElementById('btn-reset').addEventListener('click',()=>{
   if(!confirm('Reset all shard progress? This cannot be undone.'))return;
